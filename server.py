@@ -48,7 +48,7 @@ while waiting_for_connections:
     if total_votes == total_yes_votes and total_votes != 0:
         waiting_for_connections = False
 
-# Begin the game of BlackJack
+## PLAYING BLACKJACK ##
 game_is_running: bool = True
 while game_is_running:
     
