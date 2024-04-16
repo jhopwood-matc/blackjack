@@ -29,14 +29,13 @@ window_width: int = 900
 window_height: int = 600
 window: pygame.surface.Surface = pygame.display.set_mode((window_width, window_height))
 
-textbox: TextInputField = TextInputField(window, VecInt(100,100), game_font, 30)
-
 # Change the window's title
 pygame.display.set_caption("Blackjack")
 
 # Views
 MAIN_MENU:  str = "Main Menu"
 RULES:      str = "Rules"
+GET_NAME:   str = "Get Name"
 GAME_START: str = "Game Start"
 
 view: str = MAIN_MENU
@@ -45,28 +44,40 @@ view: str = MAIN_MENU
 
 # Main Menu
 main_menu_builder: MenuBuilder = MenuBuilder(window, game_font)
-main_menu_builder.set_location(VecInt(400, 400))
 main_menu_builder.add_text_line("Welcome to BlackJack 0.1.1.")
-main_menu_builder.add_text_line("Please select one of the options.")
-main_menu_builder.add_button("Rules")
 main_menu_builder.add_button("Multiplayer")
+main_menu_builder.add_button("Rules")
+main_menu_builder.center()
 
 # Rules Menu
 rules_menu_builder: MenuBuilder = MenuBuilder(window, game_font)
-rules_menu_builder.set_location(VecInt(200, 200))
+rules_menu_builder.set_location(VecInt(20, 20))
 rules_menu_builder.add_button("Go Back")
+
+# Get Name Menu
+get_name_menu_builder: MenuBuilder = MenuBuilder(window, game_font)
+get_name_menu_builder.add_text_line("Give yourself a name:")
+get_name_menu_builder.add_text_input_field(25)
+get_name_menu_builder.add_button("Accept")
+get_name_menu_builder.add_button("Go Back")
+get_name_menu_builder.center()
+
 
 # ---- Main ----
 running: bool = True
 while running:
 
-    # Stores the position of any mouse activity, initialized to 0 for safety
-    click_x: int = 0
-    click_y: int = 0
+    # Stores the position of any mouse activity, initialized to 40k for safety
+    click_x: int = 40000
+    click_y: int = 40000
     click_location: VecInt = VecInt(click_x, click_y)
 
+    # user key and mouse input events per frame
+    pygame_events = pygame.event.get()
+    key_activity = pygame.key.get_pressed()
+
     # User input checking
-    for event in pygame.event.get():
+    for event in pygame_events:
 
         # Handle clicking the [X] button on the window to shutdown the program
         if event.type == pygame.QUIT:
@@ -80,24 +91,6 @@ while running:
                 click_x, click_y = pygame.mouse.get_pos()
                 click_location: VecInt = VecInt(click_x, click_y)
 
-        if event.type == pygame.KEYDOWN:
-            key_activity = pygame.key.get_pressed()
-            for pg_key in keymap:
-
-                is_pressed: bool = event.key == pg_key
-                is_lshift_active: bool = key_activity[pygame.K_LSHIFT]
-                is_letter: bool = keymap[pg_key] in letters
-
-                if is_pressed and is_lshift_active and is_letter:
-                    textbox.update_text(keymap[pg_key].upper())
-                elif is_pressed and is_lshift_active and pg_key == pygame.K_SEMICOLON:
-                    textbox.update_text(":")
-                elif is_pressed:
-                    textbox.update_text(keymap[pg_key])
-            if event.key == pygame.K_BACKSPACE:
-                textbox.update_text("", True)
-
-
     if view == MAIN_MENU:
 
         # Handle an event that the Main Menu 'Rules' button being pressed
@@ -106,11 +99,10 @@ while running:
         
         # Handle an event that the Main Menu 'Multiplayer' button being pressed
         if main_menu_builder.button_is_clicked("Multiplayer", click_location):
-            print("Game On!")
+            view = GET_NAME
 
-        window.fill((0, 255, 0))
+        window.fill((175, 175, 160))
         main_menu_builder.draw()
-        textbox.draw()
         pygame.display.flip()
 
         # view = main_menu()
@@ -121,8 +113,20 @@ while running:
         if rules_menu_builder.button_is_clicked("Go Back", click_location):
             view = MAIN_MENU
 
-        window.fill((55, 200, 0))
+        window.fill((175, 175, 160))
         rules_menu_builder.draw()
+        pygame.display.flip()
+
+    if view == GET_NAME:
+
+        if get_name_menu_builder.button_is_clicked("Go Back", click_location):
+            view = MAIN_MENU
+
+        for _, textbox in get_name_menu_builder.text_input_fields:
+            textbox.update(pygame_events, key_activity)
+
+        window.fill((175, 175, 160))
+        get_name_menu_builder.draw()
         pygame.display.flip()
 
     if view == GAME_START:

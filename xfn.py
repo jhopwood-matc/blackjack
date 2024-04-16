@@ -29,14 +29,14 @@ class VecInt:
     
 class Button:
 
-    window: pygame.surface.Surface
-    location: VecInt
-    text: str
-    font: pygame.font.Font
-    rendered_text: pygame.surface.Surface
-    border_thickness: int
-    height: int
-    width: int
+    window: pygame.surface.Surface          # Window the button is rendered in
+    location: VecInt                        # Screen coordinates of button in the window
+    text: str                               # What the button says
+    font: pygame.font.Font                  # font object that dictates the button's text's style
+    rendered_text: pygame.surface.Surface   # actual image of the text that gets displayed
+    border_thickness: int                   # space between button text and button's edge
+    height: int                             # height of button
+    width: int                              # width of button
 
     def __init__(self, window: pygame.surface.Surface, location: VecInt, text: str, font: pygame.font.Font) -> None:
         assert isinstance(window, pygame.surface.Surface), "window is not a Surface"
@@ -49,14 +49,20 @@ class Button:
         self.location = location
         self.font = font
 
-        self.rendered_text = self.font.render(self.text, True, (0, 0, 255))
+        self.rendered_text = self.font.render(self.text, True, (0, 0, 0))
 
-        BORDER_RATIO_VALUE: float = 0.10
+        BORDER_RATIO_VALUE: float = 0.20
 
-        (rendered_text_width, rendered_text_height) = self.rendered_text.get_size()
-        self.border_thickness: int = int(BORDER_RATIO_VALUE * rendered_text_width)
-        self.width = rendered_text_width + 2 * self.border_thickness
-        self.height = rendered_text_height + 2 * self.border_thickness
+        # Derive the size (dimensions) of the text field box from the size of the font
+        self.width, self.height = self.font.size(self.text)
+        self.border_thickness = BORDER_RATIO_VALUE * self.height
+        # adjust the dimensions to add the extra space between the letters and 
+        # the edge of the text box
+        self.width += (2 * self.border_thickness)
+        self.height += (2 * self.border_thickness)
+
+    def get_width(self):
+        return self.width
 
     def set_location(self, location: VecInt):
         assert isinstance(location, VecInt), "location is not a VecInt"
@@ -70,7 +76,7 @@ class Button:
             return True
     
     def draw(self):
-        pygame.draw.rect(self.window, (255, 0, 0), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
+        pygame.draw.rect(self.window, (255, 255, 255), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
         self.window.blit(self.rendered_text, (self.location.x + self.border_thickness, self.location.y + self.border_thickness))
 
 class RenderedText:
@@ -93,6 +99,9 @@ class RenderedText:
         self.font = font
         self.location = location
         self.render = self.font.render(self.text, True, (0, 0, 0))    
+
+    def get_width(self):
+        return self.render.get_width()
     
     def set_location(self, location: VecInt):
         """
@@ -155,6 +164,7 @@ keymap = {
 letters = "abcdefghijklmnopqrstuvwxyz"
 
 
+
 class TextInputField:
     """
     A `TextInputField` is used when the developer intends to have a user input text with
@@ -185,11 +195,13 @@ class TextInputField:
         self.char_limit = char_limit
 
         # Initilize the rendered text image to nothing
-        self.rendered_text = self.font.render(" ", 1, (0,0,0))
+        self.rendered_text = self.font.render(" ", 1, (255,255,255))
+
+        BORDER_RATIO_VALUE: float = 0.20
 
         # Derive the size (dimensions) of the text field box from the size of the font
         self.width, self.height = self.font.size("_" * self.char_limit)
-        self.border_thickness = .2 * self.height
+        self.border_thickness = BORDER_RATIO_VALUE * self.height
         # adjust the dimensions to add the extra space between the letters and 
         # the edge of the text box
         self.width += (2 * self.border_thickness)
@@ -209,14 +221,14 @@ class TextInputField:
         """
         if backspace == True: # Backspacing
             self.text = self.text[0:-1:1]
-            self.rendered_text = self.font.render(self.text, 1, (0,0,0))
+            self.rendered_text = self.font.render(self.text, 1, (255,255,255))
 
         else: # Typing text
             if self.text.__len__() >= self.char_limit: # Exceedeing character limit
                 pass                                   # No more typing!
             else: # Not exceeding character limit (appending letters to text)
                 self.text = self.text + more_text
-                self.rendered_text = self.font.render(self.text, 1, (0,0,0))
+                self.rendered_text = self.font.render(self.text, 1, (255,255,255))
 
     def get_text(self):
         """
@@ -224,14 +236,49 @@ class TextInputField:
         """
         return self.text
     
+    def get_width(self):
+        return self.width
+    
+    def update(self, pygame_events: list[pygame.event.Event], key_activity: pygame.key.ScancodeWrapper):
+        """
+        This function accepts a list of user input (pygame_events) and keypress states (key_activity).
+        From these information, it changes the state of the TextInputField to reflect what the user
+        is inputing -i.e. typing.
+
+        Call this function onces per frame to make the TextInputField typing functionality work. 
+        """
+        #TODO: ASSERTS
+        for event in pygame_events:
+            if event.type == pygame.KEYDOWN:
+                for pg_key in keymap:
+                    is_pressed: bool = event.key == pg_key
+                    is_lshift_active: bool = key_activity[pygame.K_LSHIFT]
+                    is_letter: bool = keymap[pg_key] in letters
+
+                    if is_pressed and is_lshift_active and is_letter:
+                        self.update_text(keymap[pg_key].upper())
+                    elif is_pressed and is_lshift_active and pg_key == pygame.K_SEMICOLON:
+                        self.update_text(":")
+                    elif is_pressed:
+                        self.update_text(keymap[pg_key])
+                if event.key == pygame.K_BACKSPACE:
+                    self.update_text("", True)
+
     def draw(self):
         """
         Display the text input field box graphically on the screen for a frame.
         """
         # Graphical box that represents the field on the screen
-        pygame.draw.rect(self.window, (100, 100, 100), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
+        pygame.draw.rect(self.window, (0, 0, 0), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
         # Rendered text within the field
         self.window.blit(self.rendered_text, (self.location.x + self.border_thickness, self.location.y + self.border_thickness))
+
+
+
+CENTER: int = 0
+LEFT: int = 1
+
+
 
 class MenuBuilder:
     """
@@ -239,38 +286,89 @@ class MenuBuilder:
     were added in. Keep this in mind.
     """
 
-    window: pygame.surface.Surface 
-    font: pygame.font.Font
-    location: VecInt
-    rendered_text_lines: list[(int, RenderedText)]
-    buttons: dict[str, (int, Button)]
-    line_id_counter: int
+    window: pygame.surface.Surface                  # window the menu is in
+    font: pygame.font.Font                          # font of the menu's text
+    location: VecInt                                # coordinates of menu in window
+    rendered_text_lines: list[(int, RenderedText)]  # list of actual images of menu text
+    buttons: dict[str, (int, Button)]               # list of menus buttons
+    text_input_fields: list[(int, TextInputField)]  # list of places for user to type text
+    line_id_counter: int                            # counts and assigns menu elements line numbers (IDs)
+    space_between_elements: int                     # vertical space in pixels between menu element LOCATIONS!
+    justification: int                              # style of menu justification
+    longest_line_length: int                        # length of longest menu element in pixels (used for justification)
 
-    def __init__(self, window: pygame.surface.Surface, font: pygame.font.Font) -> None:
+    def __init__(self, window: pygame.surface.Surface, font: pygame.font.Font, justification: int = 0) -> None:
         """
         Create a new Menu!
+
+        justification guide
+        0 = center
+        1 = left
         """
-        # TODO asserting
+        assert isinstance(window, pygame.surface.Surface), "window is not a pygame.surface.Surface!"
+        assert isinstance(font, pygame.font.Font), "font is not a pygame.font.Font!"
+
         self.window = window
         self.font = font
         self.location = VecInt(0, 0)
         self.rendered_text_lines = []
         self.buttons = {}
+        self.text_input_fields = []
         self.line_id_counter = 0
+
+        BORDER_RATIO_VALUE: float = 0.20
+        self.space_between_elements = int(self.font.get_height() * (1 + 3 * BORDER_RATIO_VALUE))
+
+        self.justification = justification
+        self.longest_line_length = 0
 
     def update_component_locations(self):
         """
         Called internally by when the location of the menu is redefined
-        with .set_location()
+        with .set_location() or when a new element is added. 
         """
-        # TODO fix
-        MAGIC_NUMBER: int = 30
-        for id, text in self.rendered_text_lines:
-            pos: VecInt = VecInt(self.location.x, id * MAGIC_NUMBER + self.location.y)
-            text.set_location(pos)
-        for key in self.buttons:
-            pos: VecInt = VecInt(self.location.x, self.buttons[key][0] * MAGIC_NUMBER + self.location.y)
-            self.buttons[key][1].set_location(pos)
+
+        # Check for center justification style
+        if self.justification == CENTER:
+
+            # Find the length of the longest element
+            for _, text in self.rendered_text_lines:
+                length: int = text.get_width()
+                if length > self.longest_line_length:
+                    self.longest_line_length = length
+            for key in self.buttons:
+                length: int = self.buttons[key][1].get_width()
+                if length > self.longest_line_length:
+                    self.longest_line_length = length
+            for _, box in self.text_input_fields:
+                length: int = box.get_width()
+                if length > self.longest_line_length:
+                    self.longest_line_length = length
+
+            for id, text in self.rendered_text_lines:
+                offset: int = int((self.longest_line_length - text.get_width()) / 2)
+                pos: VecInt = VecInt(self.location.x + offset, id * self.space_between_elements + self.location.y)
+                text.set_location(pos)
+            for key in self.buttons:
+                offset: int = int((self.longest_line_length - self.buttons[key][1].get_width()) / 2)
+                pos: VecInt = VecInt(self.location.x + offset, self.buttons[key][0] * self.space_between_elements + self.location.y)
+                self.buttons[key][1].set_location(pos)
+            for id, box in self.text_input_fields:
+                offset: int = int((self.longest_line_length - box.get_width()) / 2)
+                pos: VecInt = VecInt(self.location.x + offset, id * self.space_between_elements + self.location.y)
+                box.set_location(pos)
+
+        # TODO LEFT JUSTIFCATION
+        # Check for left justification style
+        elif self.justification == LEFT:
+            pos: VecInt = VecInt(self.location.x, self.line_id_counter * self.space_between_elements + self.location.y)
+            for id, text in self.rendered_text_lines:
+                pos: VecInt = VecInt(self.location.x, id * self.space_between_elements + self.location.y)
+                text.set_location(pos)
+            for key in self.buttons:
+                pos: VecInt = VecInt(self.location.x, self.buttons[key][0] * self.space_between_elements + self.location.y)
+                self.buttons[key][1].set_location(pos)
+            # TODO Text fields
 
     def set_location(self, location: VecInt):
         """
@@ -280,28 +378,54 @@ class MenuBuilder:
         self.location = location
         self.update_component_locations()
         return self
+    
+    def center(self):
+        """
+        puts the menu in the mathematical near-perfect center of the screen. Call this last, as it does
+        not update dynamically when more elements are added to the menu.
+        """
+        x: int = (self.window.get_width() - self.longest_line_length) / 2
+        y: int = (self.window.get_height() - self.line_id_counter * self.space_between_elements) / 2
+        pos: VecInt = VecInt(int(x), int(y))
+        self.set_location(pos)
+        self.update_component_locations()
 
     def add_text_line(self, text: str):
         """
         Add a line of text to the menu
         """
         assert isinstance(text, str), "text is not a str"
-        # TODO fix
-        MAGIC_NUMBER: int = 30
-        pos: VecInt = VecInt(self.location.x, self.line_id_counter * MAGIC_NUMBER + self.location.y)
-        self.rendered_text_lines.append((self.line_id_counter, RenderedText(self.window, text, self.font, pos)))
+        self.rendered_text_lines.append((self.line_id_counter, RenderedText(self.window, text, self.font, VecInt(0,0))))
         self.line_id_counter+=1
+        self.update_component_locations()
         return self
     
     def add_button(self, name: str):
         """
-        Add a button to the menu
+        Add a button to a menu.
         """
         assert isinstance(name, str), "name is not a str"
-        # TODO fix
-        MAGIC_NUMBER: int = 30
-        pos: VecInt = VecInt(self.location.x, self.line_id_counter * MAGIC_NUMBER + self.location.y)
-        self.buttons[name] = (self.line_id_counter, Button(self.window, pos, name, self.font))
+        # create a button without a specific location
+        button: Button = Button(self.window, VecInt(0,0), name, self.font)
+
+        # Add button to menu's button catalog    
+        self.buttons[name] = (self.line_id_counter, button)
+
+        self.update_component_locations()
+
+        # Increase the line (element) count
+        self.line_id_counter+=1
+        return self
+    
+    def add_text_input_field(self, char_limit: int):
+        """
+        Add a space for users to type things in to the menu
+        """
+        assert isinstance(char_limit, int), "char_limit is not an int!"
+        self.text_input_fields.append((self.line_id_counter, TextInputField(self.window, VecInt(0,0), self.font, char_limit)))
+
+        self.update_component_locations()
+
         self.line_id_counter+=1
         return self
     
@@ -322,6 +446,9 @@ class MenuBuilder:
             rt.draw()
         for b in self.buttons:
             self.buttons[b][1].draw()
+        for _, f in self.text_input_fields:
+            f.draw()
+            
 
 # -----------------------------------## NETWORK COMMUNICATION ##-----------------------------------
 
