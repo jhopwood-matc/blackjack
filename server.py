@@ -1,17 +1,20 @@
 #!/usr/bin/ python3.10
-import socket
+from socket import socket, AF_INET, SOCK_STREAM, create_server
 
-from xfn import send_message, receive_message, process_client_message, Player
+from net import send_message, receive_message, process_client_message, Player
 
 ## BOOT AND INITIALIZE ##
-connected_players: {socket.socket, Player} = {}
+connected_players: {socket, Player} = {}
 whose_turn: int
 starting_wallet_amount: float
 
 # Start TCP server on localhost on port 51721
 server_address: tuple[str, int] = ("127.0.0.1", 51721)
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock = socket(AF_INET, SOCK_STREAM)
 sock.bind(server_address)
+
+addr = ("", 51721)
+s = create_server(addr, )
 
 # Begin listening
 sock.listen(5)

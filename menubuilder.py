@@ -1,48 +1,33 @@
+from pygame.surface import Surface
+from pygame.font import Font
+from pygame import (
+    K_a, K_b, K_c, K_d, K_e, K_f, K_g, K_h, K_i, K_j,
+    K_k, K_l, K_m, K_n, K_o, K_p, K_q, K_r, K_s, K_t,
+    K_u, K_v, K_w, K_x, K_y, K_z, K_1, K_2, K_3, K_4,
+    K_5, K_6, K_7, K_8, K_9, K_0, K_SPACE, K_PERIOD, K_COMMA,
+    KEYDOWN, K_LSHIFT, K_BACKSPACE, Rect, draw)
+from pygame.event import Event
+from pygame.key import ScancodeWrapper
 
-from typing import Callable
-import socket
+from vecint import VecInt
 
-import pygame
-
-# https://pypi.org/project/msgpack/
-import msgpack
-
-
-class Player:
-
-    wallet_amount: float
-    vote: bool
-     
-    def __init__(self, starting_wallet_amount: float) -> None:
-        self.wallet_amount = 100.0 * starting_wallet_amount
-        self.vote = False
-
-class VecInt:
-    x: int
-    y: int
-
-    def __init__(self, x: int, y: int) -> None:
-        assert isinstance(x, int), "x value of vector is not an integer"
-        assert isinstance(y, int), "y value of vector is not an integer"
-        self.x = x
-        self.y = y
     
 class Button:
 
-    window: pygame.surface.Surface          # Window the button is rendered in
-    location: VecInt                        # Screen coordinates of button in the window
-    text: str                               # What the button says
-    font: pygame.font.Font                  # font object that dictates the button's text's style
-    rendered_text: pygame.surface.Surface   # actual image of the text that gets displayed
-    border_thickness: int                   # space between button text and button's edge
-    height: int                             # height of button
-    width: int                              # width of button
+    window: Surface           # Window the button is rendered in
+    location: VecInt          # Screen coordinates of button in the window
+    text: str                 # What the button says
+    font: Font                # font object that dictates the button's text's style
+    rendered_text: Surface    # actual image of the text that gets displayed
+    border_thickness: int     # space between button text and button's edge
+    height: int               # height of button
+    width: int                # width of button
 
-    def __init__(self, window: pygame.surface.Surface, location: VecInt, text: str, font: pygame.font.Font) -> None:
-        assert isinstance(window, pygame.surface.Surface), "window is not a Surface"
+    def __init__(self, window: Surface, location: VecInt, text: str, font: Font) -> None:
+        assert isinstance(window, Surface), "window is not a Surface"
         assert isinstance(location, VecInt), "`location` is not a VecInt"
         assert isinstance(text, str), "`text` is not a str"
-        assert isinstance(font, pygame.font.Font), "font is not a Font"
+        assert isinstance(font, Font), "font is not a Font"
         
         self.window = window
         self.text = text
@@ -76,20 +61,20 @@ class Button:
             return True
     
     def draw(self):
-        pygame.draw.rect(self.window, (255, 255, 255), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
+        draw.rect(self.window, (255, 255, 255), Rect(self.location.x, self.location.y, self.width, self.height))
         self.window.blit(self.rendered_text, (self.location.x + self.border_thickness, self.location.y + self.border_thickness))
 
 class RenderedText:
     """
     Graphical text that is for the screen
     """
-    window: pygame.surface.Surface # Window the text is renedered in
-    text: str                      # What the text says
-    font: pygame.font.Font         # Font object that dictates its style
-    location: VecInt               # Screen coordinates in the window
-    render: pygame.surface.Surface # (The rendered image of the text is stored here)
+    window: Surface    # Window the text is renedered in
+    text: str          # What the text says
+    font: Font         # Font object that dictates its style
+    location: VecInt   # Screen coordinates in the window
+    render: Surface    # (The rendered image of the text is stored here)
 
-    def __init__(self, window: pygame.surface.Surface, text: str, font: pygame.font.Font, location: VecInt) -> None:
+    def __init__(self, window: Surface, text: str, font: Font, location: VecInt) -> None:
         """
         Create a new RenederedText!
         """
@@ -119,46 +104,45 @@ class RenderedText:
 
 
 keymap = {
-    pygame.K_a: "a",
-    pygame.K_b: "b",
-    pygame.K_c: "c",
-    pygame.K_d: "d",
-    pygame.K_e: "e",
-    pygame.K_f: "f",
-    pygame.K_g: "g",
-    pygame.K_h: "h",
-    pygame.K_i: "i",
-    pygame.K_j: "j",
-    pygame.K_k: "k",
-    pygame.K_l: "l",
-    pygame.K_m: "m",
-    pygame.K_n: "n",
-    pygame.K_o: "o",
-    pygame.K_p: "p",
-    pygame.K_q: "q",
-    pygame.K_r: "r",
-    pygame.K_s: "s",
-    pygame.K_t: "t",
-    pygame.K_u: "u",
-    pygame.K_v: "v",
-    pygame.K_w: "w",
-    pygame.K_x: "x",
-    pygame.K_y: "y",
-    pygame.K_z: "z",
-    pygame.K_SPACE: " ",
-    pygame.K_1: "1",
-    pygame.K_2: "2",
-    pygame.K_3: "3",
-    pygame.K_4: "4",
-    pygame.K_5: "5",
-    pygame.K_6: "6",
-    pygame.K_7: "7",
-    pygame.K_8: "8",
-    pygame.K_9: "9",
-    pygame.K_0: "0",
-    pygame.K_PERIOD: ".",
-    pygame.K_SEMICOLON: ";",
-    pygame.K_COMMA: ",",
+    K_a: "a",
+    K_b: "b",
+    K_c: "c",
+    K_d: "d",
+    K_e: "e",
+    K_f: "f",
+    K_g: "g",
+    K_h: "h",
+    K_i: "i",
+    K_j: "j",
+    K_k: "k",
+    K_l: "l",
+    K_m: "m",
+    K_n: "n",
+    K_o: "o",
+    K_p: "p",
+    K_q: "q",
+    K_r: "r",
+    K_s: "s",
+    K_t: "t",
+    K_u: "u",
+    K_v: "v",
+    K_w: "w",
+    K_x: "x",
+    K_y: "y",
+    K_z: "z",
+    K_SPACE: " ",
+    K_1: "1",
+    K_2: "2",
+    K_3: "3",
+    K_4: "4",
+    K_5: "5",
+    K_6: "6",
+    K_7: "7",
+    K_8: "8",
+    K_9: "9",
+    K_0: "0",
+    K_PERIOD: ".",
+    K_COMMA: ",",
 }
 
 letters = "abcdefghijklmnopqrstuvwxyz"
@@ -172,21 +156,21 @@ class TextInputField:
     and dynamially update to display what the user is typing. 
     """
 
-    window: pygame.surface.Surface          # Window the text is renedered in
-    location: VecInt                        # Screen coordinates in the window
-    text: str                               # stores the text that is input
-    font: pygame.font.Font                  # Font object that dictates its style
-    rendered_text: pygame.surface.Surface   # (The rendered image of the text is stored here)
-    char_limit: int                         # max length of text a user can type (in characters)
-    border_thickness: int                   # space between the letters and field's border in pixels
-    height: int                             # height of text field graphical box
-    width: int                              # width of text field graphical box
+    window: Surface          # Window the text is renedered in
+    location: VecInt         # Screen coordinates in the window
+    text: str                # stores the text that is input
+    font: Font               # Font object that dictates its style
+    rendered_text: Surface   # (The rendered image of the text is stored here)
+    char_limit: int          # max length of text a user can type (in characters)
+    border_thickness: int    # space between the letters and field's border in pixels
+    height: int              # height of text field graphical box
+    width: int               # width of text field graphical box
 
-    def __init__(self, window: pygame.surface.Surface, location: VecInt, font: pygame.font.Font, char_limit: int) -> None:
+    def __init__(self, window: Surface, location: VecInt, font: Font, char_limit: int) -> None:
         assert isinstance(char_limit, int), "char_limit is not an int"
-        assert isinstance(window, pygame.surface.Surface), "window is not a Surface"
+        assert isinstance(window, Surface), "window is not a Surface"
         assert isinstance(location, VecInt), "`location` is not a VecInt"
-        assert isinstance(font, pygame.font.Font), "font is not a Font"
+        assert isinstance(font, Font), "font is not a Font"
         
         self.window = window
         self.location = location
@@ -239,7 +223,7 @@ class TextInputField:
     def get_width(self):
         return self.width
     
-    def update(self, pygame_events: list[pygame.event.Event], key_activity: pygame.key.ScancodeWrapper):
+    def update(self, pygame_events: list[Event], key_activity: ScancodeWrapper):
         """
         This function accepts a list of user input (pygame_events) and keypress states (key_activity).
         From these information, it changes the state of the TextInputField to reflect what the user
@@ -249,19 +233,17 @@ class TextInputField:
         """
         #TODO: ASSERTS
         for event in pygame_events:
-            if event.type == pygame.KEYDOWN:
+            if event.type == KEYDOWN:
                 for pg_key in keymap:
                     is_pressed: bool = event.key == pg_key
-                    is_lshift_active: bool = key_activity[pygame.K_LSHIFT]
+                    is_lshift_active: bool = key_activity[K_LSHIFT]
                     is_letter: bool = keymap[pg_key] in letters
 
                     if is_pressed and is_lshift_active and is_letter:
                         self.update_text(keymap[pg_key].upper())
-                    elif is_pressed and is_lshift_active and pg_key == pygame.K_SEMICOLON:
-                        self.update_text(":")
                     elif is_pressed:
                         self.update_text(keymap[pg_key])
-                if event.key == pygame.K_BACKSPACE:
+                if event.key == K_BACKSPACE:
                     self.update_text("", True)
 
     def draw(self):
@@ -269,7 +251,7 @@ class TextInputField:
         Display the text input field box graphically on the screen for a frame.
         """
         # Graphical box that represents the field on the screen
-        pygame.draw.rect(self.window, (0, 0, 0), pygame.Rect(self.location.x, self.location.y, self.width, self.height))
+        draw.rect(self.window, (0, 0, 0), Rect(self.location.x, self.location.y, self.width, self.height))
         # Rendered text within the field
         self.window.blit(self.rendered_text, (self.location.x + self.border_thickness, self.location.y + self.border_thickness))
 
@@ -286,8 +268,8 @@ class MenuBuilder:
     were added in. Keep this in mind.
     """
 
-    window: pygame.surface.Surface                  # window the menu is in
-    font: pygame.font.Font                          # font of the menu's text
+    window: Surface                                 # window the menu is in
+    font: Font                                      # font of the menu's text
     location: VecInt                                # coordinates of menu in window
     rendered_text_lines: list[(int, RenderedText)]  # list of actual images of menu text
     buttons: dict[str, (int, Button)]               # list of menus buttons
@@ -297,7 +279,7 @@ class MenuBuilder:
     justification: int                              # style of menu justification
     longest_line_length: int                        # length of longest menu element in pixels (used for justification)
 
-    def __init__(self, window: pygame.surface.Surface, font: pygame.font.Font, justification: int = 0) -> None:
+    def __init__(self, window: Surface, font: Font, justification: int = 0) -> None:
         """
         Create a new Menu!
 
@@ -305,8 +287,8 @@ class MenuBuilder:
         0 = center
         1 = left
         """
-        assert isinstance(window, pygame.surface.Surface), "window is not a pygame.surface.Surface!"
-        assert isinstance(font, pygame.font.Font), "font is not a pygame.font.Font!"
+        assert isinstance(window, Surface), "window is not a pygame.surface.Surface!"
+        assert isinstance(font, Font), "font is not a pygame.font.Font!"
 
         self.window = window
         self.font = font
@@ -448,49 +430,3 @@ class MenuBuilder:
             self.buttons[b][1].draw()
         for _, f in self.text_input_fields:
             f.draw()
-            
-
-# -----------------------------------## NETWORK COMMUNICATION ##-----------------------------------
-
-# Our Netwoork Message Format:
-#     '<[Two Letter Action]:[Relevant Data]>'
-#     Example '<VS:1>' for Vote Start = True
-
-VOTE_ACTION: str = "VS"
-VOTE_NO_MESSAGE: str = "<VS:0>"
-VOTE_YES_MESSAGE: str = "<VS:1>"
-    
-def send_message(sock: socket.socket, message: str):
-    """ Send msg block. """
-    pack = msgpack.packb(message)
-    sock.send(pack)
-
-def receive_message(sock: socket.socket) -> str:
-    """ Receive a msg block. """
-    pack = sock.recv(1024)
-    message = msgpack.unpackb(pack)
-    return message
-
-def process_client_message(connection: socket.socket, message: str, connected_players: {socket.socket, Player}): # TODO
-    """ Processes an incoming message from a player client. """
-    print(message)
-
-    # Check that the message is in the correct format. 
-    if message[0] == "<" and message[-1] == ">" and message[3] == ":":
-        pass
-    else:
-        return
-    
-    # Vote Messages
-    if message == VOTE_NO_MESSAGE:
-        connected_players[connection].vote = False
-    elif message == VOTE_YES_MESSAGE:
-        connected_players[connection].vote = True
-        print(connected_players[connection].vote)
-
-
-def process_server_message(): # TODO
-    """ Processes an incoming message from the game server. """    
-    pass
-    
-    
